@@ -1,0 +1,41 @@
+Refresh('Your data source');
+
+Set(lstDataSource,"Your data source");
+
+Set(lastEdited, LookUp(
+      ItemLockState,
+      Title = lstDataSource && RefID = BrowseGallery1.Selected.ID
+   ).Modified
+);
+
+Set(EditedBy, LookUp(
+     ItemLockState,
+      Title = lstDataSource && RefID = BrowseGallery1.Selected.ID
+   ).'Modified By'.DisplayName
+);
+
+Set(MinDiff, DateDiff(lastEdited, Now(), "Minutes" ));
+
+//Lock the record for 30 minutes
+If(MinDiff-30 > 0 || MinDiff = Blank() || User().FullName = EditedBy,
+//Notify("This record is editable. Last edited: " & MinDiff & " minutes ago by " & EditedBy, NotificationType.Information);
+Set(ctlMode, FormMode.Edit);
+
+Patch(
+    ItemLockState
+    ,
+    Coalesce(LookUp(ItemLockState,RefID=BrowseGallery1.Selected.ID && Title=lstDataSource),
+    Defaults(ItemLockState)),
+    {
+        RefID: BrowseGallery1.Selected.ID,
+        Title: lstDataSource,
+        Increment: LookUp(ItemLockState,RefID=BrowseGallery1.Selected.ID && Title=lstDataSource).Increment + 1
+    }
+)
+,
+Notify("This Record is locked by user " & EditedBy & ", " & MinDiff & " minutes ago", NotificationType.Warning);
+Set(ctlMode, FormMode.View);
+);
+
+//EditForm(EditForm1);
+Navigate(EditScreen1, ScreenTransition.None)
